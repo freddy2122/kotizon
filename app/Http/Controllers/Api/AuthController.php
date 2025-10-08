@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-use Twilio\Rest\Client;
+use App\Jobs\SendWhatsappVerification;
 
 class AuthController extends Controller
 {
@@ -38,7 +38,7 @@ class AuthController extends Controller
         }
 
         // Générer code unique
-        $verificationCode = 'KOT-' . strtoupper(Str::random(6));
+        $verificationCode = 'KOT' . strtoupper(Str::random(3));
 
         $user = User::create([
             'name'              => $request->name,
@@ -50,23 +50,23 @@ class AuthController extends Controller
             'is_phone_verified' => false,
         ]);
 
-        // 1. Envoi EMAIL
-        Mail::to($user->email)->send(new VerificationCodeMail($verificationCode));
+        // 1. Envoi EMAIL (en file d'attente)
+        try {
+            Mail::to($user->email)->queue(new VerificationCodeMail($verificationCode));
+        } catch (\Throwable $e) {
+            // Pas bloquant
+        }
 
-        // 2. Envoi WhatsApp via Twilio
-        $sid    = env('TWILIO_SID');
-        $token  = env('TWILIO_AUTH_TOKEN');
-        $twilio = new Client($sid, $token);
-
-        $from = "whatsapp:+14155238886"; // Numéro Twilio Sandbox
-        $to   = "whatsapp:" . $user->phone; // Exemple : whatsapp:+229XXXXXXXX
-
-        $message = "Bonjour {$user->name}, votre code de vérification est : {$verificationCode}";
-
-        $twilio->messages->create($to, [
-            "from" => $from,
-            "body" => $message
-        ]);
+        // 2. Envoi WhatsApp via job (non bloquant)
+        try {
+            $message = "Bonjour {$user->name}, votre code de vérification est : {$verificationCode}";
+            // $user->phone doit être au format international
+            if (!empty($user->phone)) {
+                SendWhatsappVerification::dispatch($user->phone, $message);
+            }
+        } catch (\Throwable $e) {
+            // Pas bloquant
+        }
 
         return response()->json([
             'message' => 'Inscription réussie. Code envoyé par email et WhatsApp.',

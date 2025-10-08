@@ -28,6 +28,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'verification_code',
     ];
 
     /**
@@ -40,6 +41,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'is_verified' => 'boolean',
+            'is_phone_verified' => 'boolean',
         ];
     }
 
@@ -48,4 +52,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(KycProfile::class);
     }
+
+    public function cagnottes()
+    {
+        return $this->hasMany(Cagnotte::class);
+    }
 }
+
