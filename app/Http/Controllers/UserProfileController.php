@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UserProfileController extends Controller
 {
@@ -30,6 +31,11 @@ class UserProfileController extends Controller
                 'city'          => 'nullable|string|max:100',
                 'country'       => 'nullable|string|max:100',
                 'avatar'        => 'nullable|image|max:2048',
+                'language'      => 'nullable|string|max:10',
+                'timezone'      => 'nullable|string|max:64',
+                'theme'         => 'nullable|in:light,dark,system,Clair,Sombre',
+                'notif_email'   => 'nullable|boolean',
+                'notif_push'    => 'nullable|boolean',
             ]);
 
             if ($validator->fails()) {
@@ -82,7 +88,12 @@ class UserProfileController extends Controller
                 'date_of_birth',
                 'address',
                 'city',
-                'country'
+                'country',
+                'language',
+                'timezone',
+                'theme',
+                'notif_email',
+                'notif_push',
             ]));
 
             $user->save();
@@ -103,6 +114,46 @@ class UserProfileController extends Controller
                 'status' => 'error',
                 'message' => 'Une erreur est survenue lors de la mise à jour du profil.',
                 'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+    
+    public function changePassword(Request $request)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'unauthenticated',
+                    'message' => 'Utilisateur non authentifié.'
+                ], 401);
+            }
+
+            $validated = $request->validate([
+                'current_password' => 'required|string',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            if (!Hash::check($validated['current_password'], $user->password)) {
+                return response()->json([
+                    'status' => 'validation_error',
+                    'message' => 'Le mot de passe actuel est incorrect.',
+                    'errors' => [ 'current_password' => ['Mot de passe actuel incorrect.'] ]
+                ], 422);
+            }
+
+            $user->password = Hash::make($validated['password']);
+            $user->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Mot de passe changé avec succès.'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Une erreur est survenue lors du changement de mot de passe.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }

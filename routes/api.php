@@ -5,6 +5,13 @@ use App\Http\Controllers\KycController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\CagnotteController;
 use App\Http\Controllers\DebugController;
+use App\Http\Controllers\CagnotteRequestController;
+use App\Http\Controllers\Admin\WithdrawalAdminController;
+use App\Http\Controllers\Admin\ReportAdminController;
+use App\Http\Controllers\Admin\CagnotteRequestAdminController;
+use App\Http\Controllers\Admin\CategoryAdminController;
+use App\Http\Controllers\Admin\AnalyticsAdminController;
+use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\Admin\UserAdminController;
 use Illuminate\Support\Facades\Route;
 use App\Mail\VerificationCodeMail;
@@ -45,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::get('/mes-cagnottes', [CagnotteController::class, 'myCagnottes']);
     Route::put('/user/profile', [UserProfileController::class, 'update']);
+    Route::post('/user/change-password', [UserProfileController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Cagnottes
@@ -58,6 +66,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cagnottes/{cagnotte}/unpublish', [CagnotteController::class, 'unpublish']);
     Route::post('/cagnottes/{cagnotte}/preview', [CagnotteController::class, 'preview']);
     Route::post('/cagnottes/{cagnotte}/unpreview', [CagnotteController::class, 'unpreview']);
+
+    // Demandes de création de cagnottes (utilisateur)
+    Route::post('/cagnotte-requests', [CagnotteRequestController::class, 'store']);
+
+    // Dashboard utilisateur
+    Route::get('/user/dashboard', [UserDashboardController::class, 'dashboard']);
+    Route::get('/user/donations', [UserDashboardController::class, 'donations']);
 });
 
 Route::middleware(['auth:sanctum', 'can:admin'])->prefix('admin')->group(function () {
@@ -72,5 +87,45 @@ Route::middleware(['auth:sanctum', 'can:admin'])->prefix('admin')->group(functio
     Route::get('users/{id}', [UserAdminController::class, 'show']);
     Route::post('users/{id}/toggle-active', [UserAdminController::class, 'toggleActive']);
     Route::post('users/{id}/role', [UserAdminController::class, 'setRole']);
+
+    Route::get('overview', [UserAdminController::class, 'overview']);
+    Route::get('users/counters', [UserAdminController::class, 'counters']);
+
+    // Categories (CRUD)
+    Route::get('categories', [CategoryAdminController::class, 'index']);
+    Route::post('categories', [CategoryAdminController::class, 'store']);
+    Route::put('categories/{id}', [CategoryAdminController::class, 'update']);
+    Route::delete('categories/{id}', [CategoryAdminController::class, 'destroy']);
+
+    Route::get('cagnottes', [CagnotteController::class, 'adminIndex']);
+    Route::get('cagnottes/export', [CagnotteController::class, 'adminExport']);
+    Route::get('cagnottes/{id}', [CagnotteController::class, 'adminShow']);
+    Route::post('cagnottes/{id}/publish', [CagnotteController::class, 'adminPublish']);
+    Route::post('cagnottes/{id}/unpublish', [CagnotteController::class, 'adminUnpublish']);
+    Route::post('cagnottes/{id}/suspend', [CagnotteController::class, 'adminSuspend']);
+    Route::post('cagnottes/{id}/unsuspend', [CagnotteController::class, 'adminUnsuspend']);
+    Route::delete('cagnottes/{id}', [CagnotteController::class, 'adminDestroy']);
+    Route::get('cagnottes/counters', [CagnotteController::class, 'adminCounters']);
+
+    // Withdrawals (Retraits)
+    Route::get('withdrawals', [WithdrawalAdminController::class, 'index']);
+    Route::get('withdrawals/{id}', [WithdrawalAdminController::class, 'show']);
+    Route::post('withdrawals/{id}/approve', [WithdrawalAdminController::class, 'approve']);
+    Route::post('withdrawals/{id}/reject', [WithdrawalAdminController::class, 'reject']);
+
+    // Reports (Signalements)
+    Route::get('reports', [ReportAdminController::class, 'index']);
+    Route::get('reports/{id}', [ReportAdminController::class, 'show']);
+    Route::post('reports/{id}/resolve', [ReportAdminController::class, 'resolve']);
+
+    // Demandes de création de cagnottes (admin)
+    Route::get('cagnotte-requests', [CagnotteRequestAdminController::class, 'index']);
+    Route::get('cagnotte-requests/{id}', [CagnotteRequestAdminController::class, 'show']);
+    Route::post('cagnotte-requests/{id}/approve', [CagnotteRequestAdminController::class, 'approve']);
+    Route::post('cagnotte-requests/{id}/reject', [CagnotteRequestAdminController::class, 'reject']);
+
+    // Analytics (90 jours)
+    Route::get('analytics/donations', [AnalyticsAdminController::class, 'donations']);
+    Route::get('analytics/withdrawals', [AnalyticsAdminController::class, 'withdrawals']);
 });
 

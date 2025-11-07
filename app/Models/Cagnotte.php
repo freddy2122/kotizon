@@ -12,6 +12,7 @@ class Cagnotte extends Model
         'photos' => 'array',
         'est_previsualisee' => 'boolean',
         'est_publiee' => 'boolean',
+        'is_suspended' => 'boolean',
         'objectif' => 'decimal:2',
         'montant_recolte' => 'decimal:2',
         'date_limite' => 'datetime',
